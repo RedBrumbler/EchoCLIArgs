@@ -1,0 +1,37 @@
+{
+  "sharedDir": "shared",
+  "dependenciesDir": "extern",
+  "info": {
+    "name": "echo-cli-args",
+    "id": "echo-cli-args",
+    "version": "0.1.0",
+    "url": "https://github.com/RedBrumbler/EchoCLIArgs",
+    "additionalData": {
+      "overrideSoName": "libecho-cli-args.so",
+      "cmake": false
+    }
+  },
+  "dependencies": [
+    {
+      "id": "yodel",
+      "versionRange": "^0.0.2",
+      "additionalData": {}
+    },
+    {
+      "id": "fmt",
+      "versionRange": "^10.0.0",
+      "additionalData": {}
+    },
+    {
+      "id": "flamingo",
+      "versionRange": "^0.1.1",
+      "additionalData": {}
+    },
+    {
+      "id": "capstone",
+      "versionRange": "^0.1.0",
+      "additionalData": {}
+    }
+  ],
+  "workspace": null
+}
