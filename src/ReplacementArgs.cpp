@@ -38,12 +38,12 @@ void ReplacementArgs::install_hook() {
   trampoline.WriteCallback(&target[4]);
   trampoline.Finish();
 
-  static auto args_hook = [](void* self, char const* args) noexcept {
+  static auto args_hook = [](void* self, char* args) noexcept {
     // call into apply args to override args. if this is not successful just run
     // orig
     if (!apply_args(args)) {
       LOG_WARN("custom arguments not found, so we have not set them");
-      reinterpret_cast<void (*)(void*, const char*)>(trampoline.address.data())(self, args);
+      reinterpret_cast<void (*)(void*, char*)>(trampoline.address.data())(self, args);
     }
   };
 
@@ -56,7 +56,7 @@ void ReplacementArgs::install_hook() {
   Util::protect(target, PROT_READ | PROT_EXEC);
 }
 
-bool ReplacementArgs::apply_args(char const* game_args) {
+bool ReplacementArgs::apply_args(char* game_args) {
   // read the args, store their result somewhere and apply that value
   auto args = read_args();
   if (args.empty()) return false;
@@ -73,7 +73,7 @@ bool ReplacementArgs::apply_args(char const* game_args) {
         args.size());
   }
 
-  std::memcpy(game_args, args.data(), len);
+  std::memcpy(reinterpret_cast<void*>(game_args), reinterpret_cast<void const*>(args.c_str()), len);
   return true;
 }
 
