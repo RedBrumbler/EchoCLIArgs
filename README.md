@@ -15,3 +15,6 @@ Then your command line args you wish to use should be placed at `/sdcard/ModData
 # Args
 
 Known args to be useful for the game can be found on the [echopedia](https://echopedia.gg/wiki/Echo_VR_Command_Line_Arguments)
+
+# Resources
+ - Easier time patching echovr using [EchoPatcher](https://github.com/Lauriethefish/EchoPatcher) by @Lauriethefish
