@@ -13,23 +13,22 @@
 #include "flamingo/shared/trampoline.hpp"
 
 namespace EchoCLIArgs {
-uint32_t *get_target_address() {
+uint32_t* get_target_address() {
   auto setcommandlineargs =
-      dlsym(modloader_r15_handle,
-            "_ZN10NRadEngine8CSysJava7GetArgsERNS_13CFixedStringTILy256EEE");
+      dlsym(modloader_r15_handle, "_ZN10NRadEngine8CSysJava7GetArgsERNS_13CFixedStringTILy256EEE");
   if (!setcommandlineargs) {
-    LOG_ERROR("Could not find symbol "
-              "_ZN10NRadEngine8CSysJava7GetArgsERNS_13CFixedStringTILy256EEE "
-              "in libr15.so! can't provide hook address");
+    LOG_ERROR(
+        "Could not find symbol "
+        "_ZN10NRadEngine8CSysJava7GetArgsERNS_13CFixedStringTILy256EEE "
+        "in libr15.so! can't provide hook address");
   }
 
-  return static_cast<uint32_t *>(setcommandlineargs);
+  return static_cast<uint32_t*>(setcommandlineargs);
 }
 void ReplacementArgs::install_hook() {
   // find target symbol
   auto target = get_target_address();
-  if (!target)
-    return;
+  if (!target) return;
 
   Util::protect(target, PROT_READ | PROT_WRITE | PROT_EXEC);
 
@@ -39,30 +38,28 @@ void ReplacementArgs::install_hook() {
   trampoline.WriteCallback(&target[4]);
   trampoline.Finish();
 
-  static auto args_hook = [](void *self, const char *args) noexcept {
+  static auto args_hook = [](void* self, char const* args) noexcept {
     // call into apply args to override args. if this is not successful just run
     // orig
     if (!apply_args(args)) {
       LOG_WARN("custom arguments not found, so we have not set them");
-      reinterpret_cast<void (*)(void *, const char *)>(
-          trampoline.address.data())(self, args);
+      reinterpret_cast<void (*)(void*, const char*)>(trampoline.address.data())(self, args);
     }
   };
 
   std::size_t trampoline_size = 64;
   std::size_t num_insts = 8;
   auto target_hook = flamingo::Trampoline(target, num_insts, trampoline_size);
-  target_hook.WriteCallback(reinterpret_cast<uint32_t *>(+args_hook));
+  target_hook.WriteCallback(reinterpret_cast<uint32_t*>(+args_hook));
   target_hook.Finish();
 
   Util::protect(target, PROT_READ | PROT_EXEC);
 }
 
-bool ReplacementArgs::apply_args(const char *game_args) {
+bool ReplacementArgs::apply_args(char const* game_args) {
   // read the args, store their result somewhere and apply that value
   auto args = read_args();
-  if (args.empty())
-    return false;
+  if (args.empty()) return false;
 
   LOG_DEBUG("Found replacement args: {}", args);
 
@@ -70,23 +67,22 @@ bool ReplacementArgs::apply_args(const char *game_args) {
   // into account that is 255 chars allowed
   auto len = std::min(args.size(), 255ul);
   if (len != args.size()) {
-    LOG_WARN("Args were of length {}, but the maximum allowed is 255. args "
-             "will be forcibly truncated!",
-             args.size());
+    LOG_WARN(
+        "Args were of length {}, but the maximum allowed is 255. args "
+        "will be forcibly truncated!",
+        args.size());
   }
 
-  std::memcpy(args.data(), game_args, len);
+  std::memcpy(game_args, args.data(), len);
   return true;
 }
 
 std::string ReplacementArgs::read_args() {
-  std::filesystem::path filepath{
-      fmt::format("/sdcard/ModData/{}/Mods/echo-cli-args/args.txt",
-                  modloader::get_application_id())};
+  std::filesystem::path filepath{ fmt::format("/sdcard/ModData/{}/Mods/echo-cli-args/args.txt",
+                                              modloader::get_application_id()) };
 
   // find args file on disk
-  if (!std::filesystem::exists(filepath))
-    return "";
+  if (!std::filesystem::exists(filepath)) return "";
 
   // read contents & return
   auto file = std::ifstream(filepath, std::ios::in | std::ios::ate);
@@ -98,4 +94,4 @@ std::string ReplacementArgs::read_args() {
 
   return data;
 }
-} // namespace EchoCLIArgs
+}  // namespace EchoCLIArgs
