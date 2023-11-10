@@ -43,6 +43,7 @@ void ReplacementArgs::install_hook() {
     // call into apply args to override args. if this is not successful just run
     // orig
     if (!apply_args(args)) {
+      LOG_WARN("custom arguments not found, so we have not set them");
       reinterpret_cast<void (*)(void *, const char *)>(
           trampoline.address.data())(self, args);
     }
@@ -62,13 +63,16 @@ bool ReplacementArgs::apply_args(const char *game_args) {
   auto args = read_args();
   if (args.empty())
     return false;
+
+  LOG_DEBUG("Found replacement args: {}", args);
+
   // the game_args array is max 0x100 bytes (256), taking the terminating byte
   // into account that is 255 chars allowed
   auto len = std::min(args.size(), 255ul);
   if (len != args.size()) {
-    LOG_ERROR("Args were of length {}, but the maximum allowed is 255. args "
-              "will be forcibly truncated!",
-              args.size());
+    LOG_WARN("Args were of length {}, but the maximum allowed is 255. args "
+             "will be forcibly truncated!",
+             args.size());
   }
 
   std::memcpy(args.data(), game_args, len);
@@ -87,6 +91,7 @@ std::string ReplacementArgs::read_args() {
   // read contents & return
   auto file = std::ifstream(filepath, std::ios::in | std::ios::ate);
   auto len = file.tellg();
+  file.seekg(0);
   std::string data;
   data.resize(len);
   file.read(data.data(), len);
