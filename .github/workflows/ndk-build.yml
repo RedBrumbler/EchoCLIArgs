@@ -12,6 +12,12 @@ on:
       - ".gitignore"
       - "**.yml"
       - "!.github/workflows/ndk-build.yml"
+      - '**.md'
+      - '**.txt'
+      - '!CMakeLists.txt'
+      - '**.json'
+      - '!qpm.json'
+      - '!qpm.shared.json'
 
 jobs:
   build:
