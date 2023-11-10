@@ -2,6 +2,11 @@
 
 A mod for EchoVR on quest to support reading in command line arguments, since the game normally does not support these.
 
+# Building
+
+To build, a setup for quest modding using qpm, ndk, ninja and cmake is required.
+Then when in the root directory of the repo you can run `./scripts/build.ps1` and the mod will build.
+
 # Installation
 
 Install the [yodel](https://github.com/RedBrumbler/Yodel) modloader and drop the .so file for this mod into `/sdcard/ModData/com.readyatdawn.r15/Modloader/early_mods/`
