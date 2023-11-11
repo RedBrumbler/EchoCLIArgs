@@ -5,45 +5,28 @@
 #include <filesystem>
 #include <fstream>
 
-#include "Util.hpp"
 #include "log.h"
 #include "yodel/shared/modloader.h"
 
 #include "flamingo/shared/trampoline-allocator.hpp"
 #include "flamingo/shared/trampoline.hpp"
 
+#include "echo-utils/shared/echo-utils.hpp"
+
 namespace EchoCLIArgs {
-using namespace std::string_view_literals;
-
-uint32_t* get_target_address() {
-  static auto constexpr symbol = "_ZN10NRadEngine5Main_EPKc"sv;
-  auto engine_main = dlsym(modloader_r15_handle, symbol.data());
-  if (!engine_main) {
-    LOG_ERROR("Could not find symbol '{}' in libr15.so! can't provide hook address", symbol);
-  }
-
-  return static_cast<uint32_t*>(engine_main);
-}
-
-char const** get_args_address() {
-  static constexpr auto offset = 0x372c000;
-  auto base = Util::baseAddr("libr15-original.so");
-  if (!base) {
-    LOG_WARN("Could not get base address for libr15-original.so, not returning valid args address!");
-    return nullptr;
-  }
-  return (char const**)(base + offset);
-}
-
 void ReplacementArgs::install_hook() {
   // find target symbol
-  auto target = get_target_address();
-  if (!target) return;
+  auto lookup = EchoUtils::HandleUtils::get_symbol_address("libr15.so", "_ZN10NRadEngine5Main_EPKc");
+  auto target = (uint32_t*)lookup.first;
+  if (!target) {
+    LOG_ERROR("Could not find symbol in libr15.so: {}", lookup.second);
+    return;
+  }
 
-  Util::protect(target, PROT_READ | PROT_WRITE | PROT_EXEC);
+  if (!EchoUtils::protect(target, EchoUtils::RWX)) return;
 
   // install a hook
-  static auto trampoline = flamingo::TrampolineAllocator::Allocate(64);
+  static auto trampoline = flamingo::TrampolineAllocator::Allocate(128);
   trampoline.WriteHookFixups(target);
   trampoline.WriteCallback(&target[4]);
   trampoline.Finish();
@@ -56,7 +39,7 @@ void ReplacementArgs::install_hook() {
     if (!replacement_args.empty()) {
       LOG_DEBUG("Replacing cli arguments with: '{}'", replacement_args);
       // get the static address of the cli args pointer in r15 and override if found
-      auto args_address = get_args_address();
+      auto args_address = (char const**)EchoUtils::AddressUtils::get_offset("libr15.so", 0x372c000);
       if (args_address) *args_address = replacement_args.c_str();
       // override args passed
       cli_args = replacement_args.c_str();
@@ -74,7 +57,7 @@ void ReplacementArgs::install_hook() {
   target_hook.WriteCallback(reinterpret_cast<uint32_t*>(+main_hook));
   target_hook.Finish();
 
-  Util::protect(target, PROT_READ | PROT_EXEC);
+  EchoUtils::protect(target, EchoUtils::RX);
 }
 
 std::string ReplacementArgs::read_args() {
